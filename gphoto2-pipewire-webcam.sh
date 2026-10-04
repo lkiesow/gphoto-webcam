@@ -24,6 +24,18 @@ log() {
   echo "[gphoto2-pipewire-webcam] $*"
 }
 
+# The polling loop below silences gphoto2's stderr and treats any failure as
+# "camera not there yet", so a missing binary would just look like an absent
+# camera and we'd wait forever. Fail loudly up front instead.
+missing=()
+for cmd in gphoto2 gst-launch-1.0 pgrep pkill; do
+  command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
+done
+if [ "${#missing[@]}" -gt 0 ]; then
+  log "missing required command(s): ${missing[*]}" >&2
+  exit 1
+fi
+
 run_pipeline() {
   # fdsrc is-live=true is essential: without it GStreamer treats the pipe as
   # a seekable, non-live stream and tries to preroll, but pipewiresink in
