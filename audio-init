@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -eux
+
+if pactl list sources| grep -q 'Name: alsa_input.usb-Focusrite_Scarlett'
+then
+
+	pactl unload-module module-remap-source
+	sleep 1
+	SRCNAME="$(pactl list sources| grep 'Name: alsa_input.usb-Focusrite_Scarlett' | awk '{print $2}')"
+
+	pactl load-module module-remap-source \
+		source_name=mono \
+		master="$SRCNAME" \
+		channels=1 \
+		channel_map=mono
+	sleep 1
+	pactl set-default-source mono
+	sleep 1
+	timeout 5 gst-launch-1.0 pulsesrc ! pulsesink
+fi
